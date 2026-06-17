@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>일일 업무 카운터</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --border: #e0e4ea;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --undo: #6b7280;
+      --undo-hover: #4b5563;
+      --text: #111827;
+      --muted: #6b7280;
+      --count-color: #1e40af;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      max-width: 720px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .date-picker-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .date-picker-wrap label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    input[type="date"] {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.95rem;
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      outline: none;
+    }
+
+    input[type="date"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .counters-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 520px) {
+      .counters-grid { grid-template-columns: 1fr; }
+    }
+
+    .counter-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: box-shadow 0.15s;
+    }
+
+    .counter-card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    .counter-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.01em;
+    }
+
+    .counter-value {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--count-color);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .counter-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-add {
+      flex: 2;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-add:hover { background: var(--primary-hover); }
+    .btn-add:active { transform: scale(0.96); }
+
+    .btn-undo {
+      flex: 1;
+      background: var(--card);
+      color: var(--undo);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .btn-undo:hover {
+      background: #f3f4f6;
+      color: var(--undo-hover);
+    }
+
+    .btn-undo:active { transform: scale(0.96); }
+    .btn-undo:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-undo:disabled:active { transform: none; }
+
+    /* flash animation on +1 */
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.18); color: #1d4ed8; }
+      100% { transform: scale(1); }
+    }
+    .counter-value.pop { animation: pop 0.22s ease-out; }
+
+    /* Memo section */
+    .memo-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .memo-card label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .memo-card textarea {
+      width: 100%;
+      min-height: 100px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text);
+      background: #fafafa;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      line-height: 1.6;
+    }
+
+    .memo-card textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+      background: #fff;
+    }
+
+    /* Summary section */
+    .summary-card {
+      background: var(--primary);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(37,99,235,0.25);
+      padding: 20px 24px;
+      color: #fff;
+    }
+
+    .summary-card h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      opacity: 0.9;
+    }
+
+    .summary-hint {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-bottom: 16px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 520px) {
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .summary-item {
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    .summary-item-label {
+      font-size: 0.72rem;
+      opacity: 0.8;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+
+    .summary-item-value {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .summary-total {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.25);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .summary-total-label {
+      font-size: 0.85rem;
+      opacity: 0.85;
+    }
+
+    .summary-total-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📋 일일 업무 카운터</h1>
+  <div class="date-picker-wrap">
+    <label for="datePicker">날짜</label>
+    <input type="date" id="datePicker" />
+  </div>
+</header>
+
+<main>
+  <div class="counters-grid" id="countersGrid"></div>
+
+  <div class="memo-card">
+    <label for="memoArea">📝 진행 업무 내용 <span style="font-weight:400;opacity:.7">(선택)</span></label>
+    <textarea id="memoArea" placeholder="오늘 처리한 업무를 간단히 메모하세요."></textarea>
+  </div>
+
+  <div class="summary-card">
+    <h2>오늘의 요약</h2>
+    <p class="summary-hint">아래 숫자를 보고 업무보고 폼에 그대로 입력하세요.</p>
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div class="summary-total">
+      <span class="summary-total-label">총 처리 건수</span>
+      <span class="summary-total-value" id="totalValue">0</span>
+      <span class="summary-total-label">건</span>
+    </div>
+  </div>
+</main>
+
+<script>
+  const CATEGORIES = [
+    { key: 'install_removal', label: '설치/탈거\n처리 건수', short: '설치/탈거' },
+    { key: 'as',              label: 'A/S\n처리 건수',    short: 'A/S' },
+    { key: 'contract',        label: '계약 관련\n처리 건수', short: '계약 관련' },
+    { key: 'etc',             label: '기타 문의\n처리 건수', short: '기타 문의' },
+  ];
+
+  const STORAGE_KEY = 'daily_work_counter';
+
+  // ── Storage helpers ──────────────────────────────────────────────────────────
+
+  function loadAll() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch { return {}; }
+  }
+
+  function saveAll(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function getDay(data, date) {
+    return data[date] || { install_removal: 0, as: 0, contract: 0, etc: 0, memo: '' };
+  }
+
+  // ── State ────────────────────────────────────────────────────────────────────
+
+  let currentDate = todayStr();
+  let storage = loadAll();
+  // undo stacks per category per date — kept in memory only (clears on refresh)
+  let undoStacks = {}; // { 'yyyy-mm-dd': { key: [prevValue, ...] } }
+
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function getUndoStack(date, key) {
+    if (!undoStacks[date]) undoStacks[date] = {};
+    if (!undoStacks[date][key]) undoStacks[date][key] = [];
+    return undoStacks[date][key];
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+
+  function renderCounters() {
+    const grid = document.getElementById('countersGrid');
+    grid.innerHTML = '';
+
+    CATEGORIES.forEach(cat => {
+      const card = document.createElement('div');
+      card.className = 'counter-card';
+      card.innerHTML = `
+        <div class="counter-label">${cat.label.replace('\n', '<br>')}</div>
+        <div class="counter-value" id="val-${cat.key}">0</div>
+        <div class="counter-buttons">
+          <button class="btn-add" id="add-${cat.key}">＋1</button>
+          <button class="btn-undo" id="undo-${cat.key}">↩ 되돌리기</button>
+        </div>
+      `;
+      grid.appendChild(card);
+
+      document.getElementById(`add-${cat.key}`).addEventListener('click', () => increment(cat.key));
+      document.getElementById(`undo-${cat.key}`).addEventListener('click', () => undo(cat.key));
+    });
+
+    renderSummary();
+    updateDisplay();
+  }
+
+  function renderSummary() {
+    const sg = document.getElementById('summaryGrid');
+    sg.innerHTML = '';
+    CATEGORIES.forEach(cat => {
+      const item = document.createElement('div');
+      item.className = 'summary-item';
+      item.innerHTML = `
+        <div class="summary-item-label">${cat.short}</div>
+        <div class="summary-item-value" id="sum-${cat.key}">0</div>
+      `;
+      sg.appendChild(item);
+    });
+  }
+
+  function updateDisplay() {
+    const day = getDay(storage, currentDate);
+
+    CATEGORIES.forEach(cat => {
+      const v = day[cat.key] || 0;
+      document.getElementById(`val-${cat.key}`).textContent = v;
+      document.getElementById(`sum-${cat.key}`).textContent = v;
+
+      const undoBtn = document.getElementById(`undo-${cat.key}`);
+      const stack = getUndoStack(currentDate, cat.key);
+      undoBtn.disabled = stack.length === 0;
+    });
+
+    document.getElementById('memoArea').value = day.memo || '';
+    const total = CATEGORIES.reduce((s, c) => s + (day[c.key] || 0), 0);
+    document.getElementById('totalValue').textContent = total;
+  }
+
+  // ── Actions ──────────────────────────────────────────────────────────────────
+
+  function increment(key) {
+    const day = getDay(storage, currentDate);
+    const prev = day[key] || 0;
+    getUndoStack(currentDate, key).push(prev);
+    day[key] = prev + 1;
+    storage[currentDate] = day;
+    saveAll(storage);
+    updateDisplay();
+
+    // pop animation
+    const el = document.getElementById(`val-${key}`);
+    el.classList.remove('pop');
+    void el.offsetWidth; // reflow
+    el.classList.add('pop');
+    el.addEventListener('animationend', () => el.classList.remove('pop'), { once: true });
+  }
+
+  function undo(key) {
+    const stack = getUndoStack(currentDate, key);
+    if (stack.length === 0) return;
+    const prev = stack.pop();
+    const day = getDay(storage, currentDate);
+    day[key] = Math.max(0, prev);
+    storage[currentDate] = day;
+    saveAll(storage);
+    updateDisplay();
+  }
+
+  // ── Date picker ──────────────────────────────────────────────────────────────
+
+  const datePicker = document.getElementById('datePicker');
+  datePicker.value = currentDate;
+  datePicker.addEventListener('change', () => {
+    currentDate = datePicker.value;
+    updateDisplay();
+  });
+
+  // ── Memo (debounced save) ────────────────────────────────────────────────────
+
+  let memoTimer;
+  document.getElementById('memoArea').addEventListener('input', (e) => {
+    clearTimeout(memoTimer);
+    memoTimer = setTimeout(() => {
+      const day = getDay(storage, currentDate);
+      day.memo = e.target.value;
+      storage[currentDate] = day;
+      saveAll(storage);
+    }, 400);
+  });
+
+  // ── Init ─────────────────────────────────────────────────────────────────────
+
+  renderCounters();
+</script>
+</body>
+</html>
