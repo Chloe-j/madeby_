@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일일 업무 카운터</title>
+<style>
+  :root{
+    --ink:#1b1f23;
+    --paper:#f7f6f3;
+    --card:#ffffff;
+    --line:#e3e0d8;
+    --accent:#1f6f54;
+    --accent-soft:#e6f0eb;
+    --warn:#b5491f;
+    --warn-soft:#f5e6df;
+    --muted:#6b6f76;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    padding:24px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:20px;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px;
+  }
+  h1{font-size:22px;margin:0;letter-spacing:-0.01em;}
+  .date-control{display:flex;align-items:center;gap:10px;}
+  .date-control label{font-size:13px;color:var(--muted);}
+  input[type="date"]{
+    font-size:15px;
+    padding:7px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--card);
+    color:var(--ink);
+    font-family:inherit;
+  }
+  .today-btn{
+    font-size:13px;
+    padding:7px 12px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--card);
+    cursor:pointer;
+    color:var(--muted);
+  }
+  .today-btn:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:14px;
+    margin-bottom:20px;
+  }
+  @media (max-width:900px){
+    .grid{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (max-width:520px){
+    .grid{grid-template-columns:1fr;}
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:12px;
+  }
+  .card-label{
+    font-size:14px;
+    font-weight:600;
+    color:var(--ink);
+    line-height:1.3;
+    min-height:38px;
+  }
+  .count-display{
+    font-size:52px;
+    font-weight:700;
+    text-align:center;
+    line-height:1;
+    color:var(--accent);
+    font-variant-numeric:tabular-nums;
+    padding:6px 0;
+  }
+  .btn-row{display:flex;gap:8px;}
+  .plus-btn{
+    flex:1;
+    font-size:18px;
+    font-weight:700;
+    padding:14px 0;
+    border:none;
+    border-radius:10px;
+    background:var(--accent);
+    color:#fff;
+    cursor:pointer;
+    transition:transform 0.05s ease, opacity 0.15s ease;
+  }
+  .plus-btn:hover{opacity:0.9;}
+  .plus-btn:active{transform:scale(0.97);}
+  .undo-btn{
+    flex:0 0 84px;
+    font-size:13px;
+    padding:14px 0;
+    border:1px solid var(--warn);
+    border-radius:10px;
+    background:var(--warn-soft);
+    color:var(--warn);
+    cursor:pointer;
+  }
+  .undo-btn:hover{background:var(--warn);color:#fff;}
+  .undo-btn:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+    background:var(--warn-soft);
+    color:var(--warn);
+  }
+
+  .memo-section{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+    margin-bottom:20px;
+  }
+  .memo-section label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  textarea{
+    width:100%;
+    min-height:80px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px;
+    font-size:14px;
+    font-family:inherit;
+    resize:vertical;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+  .summary{
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:14px;
+    padding:20px 22px;
+  }
+  .summary-title{
+    font-size:13px;
+    color:#b9bdc4;
+    margin-bottom:12px;
+  }
+  .summary-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-bottom:14px;
+  }
+  @media (max-width:520px){
+    .summary-grid{grid-template-columns:repeat(2,1fr);}
+  }
+  .summary-item{text-align:center;}
+  .summary-item .num{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .summary-item .lbl{font-size:12px;color:#b9bdc4;margin-top:2px;}
+  .summary-hint{
+    font-size:13px;
+    color:#d8dadf;
+    border-top:1px solid #3a3f47;
+    padding-top:12px;
+    text-align:center;
+  }
+  .summary-hint b{color:#fff;}
+
+  .settings-panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+    margin-bottom:20px;
+  }
+  .settings-panel label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .settings-row{display:flex;gap:8px;}
+  #webhookInput{
+    flex:1;
+    font-size:13px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:inherit;
+  }
+  .save-btn{
+    font-size:13px;
+    font-weight:600;
+    padding:9px 16px;
+    border:none;
+    border-radius:8px;
+    background:var(--accent);
+    color:#fff;
+    cursor:pointer;
+  }
+  .save-btn:hover{opacity:0.9;}
+  .settings-hint{
+    font-size:12px;
+    color:var(--muted);
+    margin:10px 0 0;
+    line-height:1.5;
+  }
+
+  .send-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:14px;
+    border-top:1px solid #3a3f47;
+    padding-top:14px;
+  }
+  .send-btn{
+    font-size:14px;
+    font-weight:700;
+    padding:10px 20px;
+    border:none;
+    border-radius:10px;
+    background:var(--accent);
+    color:#fff;
+    cursor:pointer;
+  }
+  .send-btn:hover{opacity:0.9;}
+  .send-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .send-status{font-size:13px;color:#d8dadf;}
+  .send-status.success{color:#7fd9b0;}
+  .send-status.error{color:#f0a98f;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>📋 일일 업무 카운터</h1>
+    <div class="date-control">
+      <label for="dateInput">날짜</label>
+      <input type="date" id="dateInput">
+      <button class="today-btn" id="todayBtn">오늘</button>
+      <button class="today-btn" id="settingsBtn">⚙ 시트 연동 설정</button>
+    </div>
+  </header>
+
+  <div class="settings-panel" id="settingsPanel" style="display:none;">
+    <label for="webhookInput">내 구글 스프레드시트 웹훅(Apps Script) URL</label>
+    <div class="settings-row">
+      <input type="text" id="webhookInput" placeholder="https://script.google.com/macros/s/ ... /exec">
+      <button class="save-btn" id="saveWebhookBtn">저장</button>
+    </div>
+    <p class="settings-hint">
+      구글 스프레드시트에서 [확장 프로그램 → Apps Script]로 웹훅 코드를 배포한 뒤,
+      생성된 웹 앱 URL을 여기에 붙여넣고 저장하세요. 이 값은 이 브라우저에만 저장되며,
+      각자 본인 스프레드시트 URL을 따로 입력하면 됩니다.
+    </p>
+  </div>
+
+  <div class="grid" id="counterGrid"></div>
+
+  <div class="memo-section">
+    <label for="memoInput">진행 업무 내용 (선택)</label>
+    <textarea id="memoInput" placeholder="오늘 진행한 업무를 간단히 적어두세요. (필수 아님)"></textarea>
+  </div>
+
+  <div class="summary">
+    <div class="summary-title">오늘의 요약</div>
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div class="summary-hint">이 숫자를 보고 폼에 그대로 입력하세요 ✍️</div>
+    <div class="send-row">
+      <button class="send-btn" id="sendBtn">📤 시트로 전송</button>
+      <span class="send-status" id="sendStatus"></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CATEGORIES = [
+  { key: 'install_removal', label: '설치/탈거 처리 건수' },
+  { key: 'as', label: 'A/S 처리 건수' },
+  { key: 'contract', label: '계약(신규, 해지, 증차 등) 처리 건수' },
+  { key: 'etc', label: '그 외 문의 처리 건수' },
+];
+
+const STORAGE_KEY = 'dailyTaskCounterData';
+const WEBHOOK_KEY = 'dailyTaskCounterWebhookUrl';
+
+function loadAllData(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  }catch(e){
+    return {};
+  }
+}
+
+function saveAllData(data){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function emptyDay(){
+  const day = { memo: '' };
+  CATEGORIES.forEach(c => day[c.key] = 0);
+  return day;
+}
+
+function todayStr(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+let allData = loadAllData();
+let currentDate = todayStr();
+
+const dateInput = document.getElementById('dateInput');
+const todayBtn = document.getElementById('todayBtn');
+const counterGrid = document.getElementById('counterGrid');
+const summaryGrid = document.getElementById('summaryGrid');
+const memoInput = document.getElementById('memoInput');
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsPanel = document.getElementById('settingsPanel');
+const webhookInput = document.getElementById('webhookInput');
+const saveWebhookBtn = document.getElementById('saveWebhookBtn');
+const sendBtn = document.getElementById('sendBtn');
+const sendStatus = document.getElementById('sendStatus');
+
+webhookInput.value = localStorage.getItem(WEBHOOK_KEY) || '';
+
+settingsBtn.addEventListener('click', () => {
+  settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+});
+
+saveWebhookBtn.addEventListener('click', () => {
+  const url = webhookInput.value.trim();
+  localStorage.setItem(WEBHOOK_KEY, url);
+  sendStatus.textContent = '저장되었습니다.';
+  sendStatus.className = 'send-status success';
+  setTimeout(() => { sendStatus.textContent = ''; sendStatus.className = 'send-status'; }, 2000);
+});
+
+sendBtn.addEventListener('click', async () => {
+  const url = localStorage.getItem(WEBHOOK_KEY);
+  if (!url) {
+    sendStatus.textContent = '먼저 ⚙ 시트 연동 설정에서 웹훅 URL을 입력해주세요.';
+    sendStatus.className = 'send-status error';
+    settingsPanel.style.display = 'block';
+    return;
+  }
+
+  const day = getCurrentDay();
+  const payload = {
+    date: currentDate,
+    install_removal: day.install_removal || 0,
+    as: day.as || 0,
+    contract: day.contract || 0,
+    etc: day.etc || 0,
+    memo: day.memo || ''
+  };
+
+  sendBtn.disabled = true;
+  sendStatus.textContent = '전송 중...';
+  sendStatus.className = 'send-status';
+
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    // no-cors 모드에서는 응답 내용을 확인할 수 없어 성공으로 간주합니다.
+    sendStatus.textContent = `전송 요청을 보냈습니다. 시트를 열어 ${currentDate} 줄이 추가됐는지 확인해주세요.`;
+    sendStatus.className = 'send-status success';
+  } catch (err) {
+    sendStatus.textContent = '전송 실패: 네트워크 또는 URL을 확인해주세요.';
+    sendStatus.className = 'send-status error';
+  } finally {
+    sendBtn.disabled = false;
+  }
+});
+
+dateInput.value = currentDate;
+
+function getCurrentDay(){
+  if(!allData[currentDate]){
+    allData[currentDate] = emptyDay();
+  }
+  return allData[currentDate];
+}
+
+function persist(){
+  saveAllData(allData);
+}
+
+function render(){
+  const day = getCurrentDay();
+  counterGrid.innerHTML = '';
+  summaryGrid.innerHTML = '';
+
+  CATEGORIES.forEach(cat => {
+    const count = day[cat.key] || 0;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-label">${cat.label}</div>
+      <div class="count-display" id="count-${cat.key}">${count}</div>
+      <div class="btn-row">
+        <button class="plus-btn" data-key="${cat.key}">+1</button>
+        <button class="undo-btn" data-key="${cat.key}" ${count <= 0 ? 'disabled' : ''}>되돌리기</button>
+      </div>
+    `;
+    counterGrid.appendChild(card);
+
+    const summaryItem = document.createElement('div');
+    summaryItem.className = 'summary-item';
+    summaryItem.innerHTML = `
+      <div class="num" id="summary-${cat.key}">${count}</div>
+      <div class="lbl">${cat.label}</div>
+    `;
+    summaryGrid.appendChild(summaryItem);
+  });
+
+  memoInput.value = day.memo || '';
+
+  counterGrid.querySelectorAll('.plus-btn').forEach(btn => {
+    btn.addEventListener('click', () => changeCount(btn.dataset.key, 1));
+  });
+  counterGrid.querySelectorAll('.undo-btn').forEach(btn => {
+    btn.addEventListener('click', () => changeCount(btn.dataset.key, -1));
+  });
+}
+
+function changeCount(key, delta){
+  const day = getCurrentDay();
+  const newVal = Math.max(0, (day[key] || 0) + delta);
+  day[key] = newVal;
+  persist();
+
+  document.getElementById(`count-${key}`).textContent = newVal;
+  document.getElementById(`summary-${key}`).textContent = newVal;
+
+  const undoBtn = counterGrid.querySelector(`.undo-btn[data-key="${key}"]`);
+  if(undoBtn) undoBtn.disabled = newVal <= 0;
+}
+
+dateInput.addEventListener('change', () => {
+  currentDate = dateInput.value || todayStr();
+  render();
+});
+
+todayBtn.addEventListener('click', () => {
+  currentDate = todayStr();
+  dateInput.value = currentDate;
+  render();
+});
+
+let memoTimer = null;
+memoInput.addEventListener('input', () => {
+  clearTimeout(memoTimer);
+  memoTimer = setTimeout(() => {
+    const day = getCurrentDay();
+    day.memo = memoInput.value;
+    persist();
+  }, 300);
+});
+
+render();
+</script>
+</body>
+</html>
